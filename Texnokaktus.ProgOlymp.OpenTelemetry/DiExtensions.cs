@@ -10,10 +10,10 @@ namespace Texnokaktus.ProgOlymp.OpenTelemetry;
 
 public static class DiExtensions
 {
-    public static IServiceCollection AddOpenTelemetry(this IServiceCollection services,
-                                                      IConfiguration configuration,
-                                                      Action<TracerProviderBuilder>? tracerProviderConfigurationAction,
-                                                      Action<MeterProviderBuilder>? meterProviderConfigurationAction)
+    public static IServiceCollection AddTexnokaktusOpenTelemetry(this IServiceCollection services,
+                                                                 IConfiguration configuration,
+                                                                 Action<TracerProviderBuilder>? tracerProviderConfigurationAction,
+                                                                 Action<MeterProviderBuilder>? meterProviderConfigurationAction)
     {
         services.AddOpenTelemetry()
                 .ConfigureResource(builder => builder.AddService(Process.GetCurrentProcess().ProcessName))
@@ -26,7 +26,8 @@ public static class DiExtensions
                                           .AddGrpcClientInstrumentation()
                                           .AddOtlpExporter(options =>
                                            {
-                                               options.Endpoint = new(configuration.GetConnectionString("OtlpReceiver")!);
+                                               options.Endpoint =
+                                                   new(configuration.GetConnectionString("OtlpReceiver")!);
                                                options.Protocol = OtlpExportProtocol.Grpc;
                                            });
 
