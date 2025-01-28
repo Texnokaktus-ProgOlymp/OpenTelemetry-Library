@@ -4,6 +4,13 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Authors>kav128</Authors>
+        <Company>Texnokaktus ProgOlymp</Company>
+        <Product>Texnokaktus OpenTelemetry</Product>
+        <NeutralLanguage>en</NeutralLanguage>
+        <PackageDescription>Preset configuration for OpenTelemetry</PackageDescription>
+        <RepositoryUrl>https://github.com/Texnokaktus-ProgOlymp/OpenTelemetry-Library</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/Texnokaktus-ProgOlymp/OpenTelemetry-Library</PackageProjectUrl>
     </PropertyGroup>
 
     <ItemGroup>
