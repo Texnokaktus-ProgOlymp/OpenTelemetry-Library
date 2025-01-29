@@ -26,7 +26,10 @@ jobs:
         run: dotnet restore
       - name: Build
         run: dotnet build --no-restore
+      - name: Version
+        id: get-version
+        run: echo "version=1.${{ github.run_number }}.${{ github.run_attempt }}" >> $GITHUB_OUTPUT
       - name: Pack
-        run: dotnet pack --configuration Release /p:Version=1.${{ github.run_number }}.${{ github.run_attempt }}
+        run: dotnet pack --configuration Release /p:Version=${{ steps.get-version.outputs.version }}
       - name: Push
         run: dotnet nuget push "Texnokaktus.ProgOlymp.OpenTelemetry/bin/Release/Texnokaktus.ProgOlymp.OpenTelemetry.*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source "github"
