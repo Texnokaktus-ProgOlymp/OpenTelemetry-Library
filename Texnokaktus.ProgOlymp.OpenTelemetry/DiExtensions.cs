@@ -17,12 +17,12 @@ public static class DiExtensions
                                                                  Action<TracerProviderBuilder>? tracerProviderConfigurationAction,
                                                                  Action<MeterProviderBuilder>? meterProviderConfigurationAction)
     {
-        var assemblyName = Assembly.GetExecutingAssembly().GetName();
+        var assemblyName = Assembly.GetEntryAssembly()?.GetName();
 
         services.AddOpenTelemetry()
-                .ConfigureResource(resourceBuilder => resourceBuilder.AddService(serviceName ?? assemblyName.Name!,
+                .ConfigureResource(resourceBuilder => resourceBuilder.AddService(serviceName ?? assemblyName?.Name!,
                                                                                  serviceNamespace: "Texnokaktus.ProgOlymp",
-                                                                                 serviceVersion: assemblyName.Version?.ToString()))
+                                                                                 serviceVersion: assemblyName?.Version?.ToString()))
                 .WithTracing(tracerProviderBuilder =>
                  {
                      tracerProviderBuilder.AddAspNetCoreInstrumentation()
