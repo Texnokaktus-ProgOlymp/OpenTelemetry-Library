@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Exporter;
@@ -12,11 +13,16 @@ public static class DiExtensions
 {
     public static IServiceCollection AddTexnokaktusOpenTelemetry(this IServiceCollection services,
                                                                  IConfiguration configuration,
+                                                                 string? serviceName,
                                                                  Action<TracerProviderBuilder>? tracerProviderConfigurationAction,
                                                                  Action<MeterProviderBuilder>? meterProviderConfigurationAction)
     {
+        var assemblyName = Assembly.GetExecutingAssembly().GetName();
+
         services.AddOpenTelemetry()
-                .ConfigureResource(builder => builder.AddService(Process.GetCurrentProcess().ProcessName))
+                .ConfigureResource(resourceBuilder => resourceBuilder.AddService(serviceName ?? assemblyName.Name!,
+                                                                                 serviceNamespace: "Texnokaktus.ProgOlymp",
+                                                                                 serviceVersion: assemblyName.Version?.ToString()))
                 .WithTracing(tracerProviderBuilder =>
                  {
                      tracerProviderBuilder.AddAspNetCoreInstrumentation()
