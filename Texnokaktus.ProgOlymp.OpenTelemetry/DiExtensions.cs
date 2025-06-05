@@ -1,11 +1,13 @@
-﻿using System.Diagnostics;
-using System.Reflection;
+﻿using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Serilog;
+using Serilog.Enrichers.OpenTelemetry;
+using Serilog.Sinks.OpenTelemetry;
 
 namespace Texnokaktus.ProgOlymp.OpenTelemetry;
 
@@ -30,12 +32,7 @@ public static class DiExtensions
                                           .AddRedisInstrumentation()
                                           .AddSqlClientInstrumentation()
                                           .AddGrpcClientInstrumentation()
-                                          .AddOtlpExporter(options =>
-                                           {
-                                               options.Endpoint =
-                                                   new(configuration.GetConnectionString("OtlpReceiver")!);
-                                               options.Protocol = OtlpExportProtocol.Grpc;
-                                           });
+                                          .AddOtlpExporter(options => options.ConfigureOtlpExporter(configuration));
 
                      tracerProviderConfigurationAction?.Invoke(tracerProviderBuilder);
                  })
@@ -44,11 +41,34 @@ public static class DiExtensions
                      meterProviderBuilder.AddAspNetCoreInstrumentation()
                                          .AddSqlClientInstrumentation()
                                          .AddHttpClientInstrumentation()
-                                         .AddPrometheusExporter();
+                                         .AddOtlpExporter(options => options.ConfigureOtlpExporter(configuration));
 
                      meterProviderConfigurationAction?.Invoke(meterProviderBuilder);
                  });
 
         return services;
     }
+
+    public static LoggerConfiguration AddOpenTelemetrySupport(this LoggerConfiguration loggerConfiguration, IConfiguration configuration)
+    {
+        return loggerConfiguration.Enrich.WithOpenTelemetryTraceId()
+                                  .Enrich.WithOpenTelemetrySpanId()
+                                  .WriteTo.OpenTelemetry(options =>
+                                   {
+                                       options.Endpoint = configuration.GetOtlpEndpoint();
+                                       options.Protocol = OtlpProtocol.Grpc;
+                                   });
+    }
+}
+
+file static class ConfigurationExtensions
+{
+    public static void ConfigureOtlpExporter(this OtlpExporterOptions exporterOptions, IConfiguration configuration)
+    {
+        exporterOptions.Endpoint = new(GetOtlpEndpoint(configuration));
+        exporterOptions.Protocol = OtlpExportProtocol.Grpc;
+    }
+
+    public static string GetOtlpEndpoint(this IConfiguration configuration) =>
+        configuration.GetConnectionString("OtlpReceiver") ?? "http://otel-collector:4317";
 }
