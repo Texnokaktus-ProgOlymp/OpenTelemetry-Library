@@ -43,20 +43,27 @@ public static class DiExtensions
         return services;
     }
 
-    public static LoggerConfiguration AddOpenTelemetrySupport(this LoggerConfiguration loggerConfiguration) =>
+    public static LoggerConfiguration AddOpenTelemetrySupport(this LoggerConfiguration loggerConfiguration,
+                                                              string? serviceName) =>
         loggerConfiguration.Enrich.WithOpenTelemetryTraceId()
                            .Enrich.WithOpenTelemetrySpanId()
-                           .WriteTo.OpenTelemetry(options => options.ResourceAttributes = new Dictionary<string, object>
-                            {
-                                ["service.name"] = "ResultService",
-                                ["service.namespace"] = "Texnokaktus.ProgOlymp",
-                                ["service.version"] = AssemblyName?.Version?.ToString()!,
-                                ["service.instance.id"] = ServiceInstanceId
-                            });
+                           .WriteTo.OpenTelemetry(options => options.ResourceAttributes
+                                                                    .AddNotNullValue("service.name", serviceName ?? AssemblyName?.Name)
+                                                                    .AddNotNullValue("service.namespace", ServiceNamespace)
+                                                                    .AddNotNullValue("service.version", AssemblyName?.Version?.ToString())
+                                                                    .AddNotNullValue("service.instance.id", ServiceInstanceId));
 
     private static TBuilder Apply<TBuilder>(this TBuilder builder, Action<TBuilder>? action)
     {
         action?.Invoke(builder);
         return builder;
+    }
+
+    private static IDictionary<string, object> AddNotNullValue(this IDictionary<string, object> dictionary, string key, object? value)
+    {
+        if (value is not null)
+            dictionary.Add(key, value);
+
+        return dictionary;
     }
 }
