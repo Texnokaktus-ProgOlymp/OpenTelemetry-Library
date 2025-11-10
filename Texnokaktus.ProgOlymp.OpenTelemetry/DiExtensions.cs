@@ -30,6 +30,7 @@ public static class DiExtensions
                 .WithTracing(tracerProviderBuilder => tracerProviderBuilder.AddAspNetCoreInstrumentation()
                                                                            .AddHttpClientInstrumentation()
                                                                            .AddRedisInstrumentation()
+                                                                           .AddEntityFrameworkCoreInstrumentation()
                                                                            .AddSqlClientInstrumentation()
                                                                            .AddGrpcClientInstrumentation()
                                                                            .Apply(tracerProviderConfigurationAction))
