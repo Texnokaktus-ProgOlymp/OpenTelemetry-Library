@@ -39,8 +39,8 @@ public static class DiExtensions
                 .WithMetrics(meterProviderBuilder =>
                  {
                      meterProviderBuilder.AddAspNetCoreInstrumentation()
-                                         .AddSqlClientInstrumentation()
                                          .AddHttpClientInstrumentation()
+                                         .AddSqlClientInstrumentation()
                                          .AddOtlpExporter(options => options.ConfigureOtlpExporter(configuration));
 
                      meterProviderConfigurationAction?.Invoke(meterProviderBuilder);
@@ -49,16 +49,14 @@ public static class DiExtensions
         return services;
     }
 
-    public static LoggerConfiguration AddOpenTelemetrySupport(this LoggerConfiguration loggerConfiguration, IConfiguration configuration)
-    {
-        return loggerConfiguration.Enrich.WithOpenTelemetryTraceId()
-                                  .Enrich.WithOpenTelemetrySpanId()
-                                  .WriteTo.OpenTelemetry(options =>
-                                   {
-                                       options.Endpoint = configuration.GetOtlpEndpoint();
-                                       options.Protocol = OtlpProtocol.Grpc;
-                                   });
-    }
+    public static LoggerConfiguration AddOpenTelemetrySupport(this LoggerConfiguration loggerConfiguration, IConfiguration configuration) =>
+        loggerConfiguration.Enrich.WithOpenTelemetryTraceId()
+                           .Enrich.WithOpenTelemetrySpanId()
+                           .WriteTo.OpenTelemetry(options =>
+                            {
+                                options.Endpoint = configuration.GetOtlpEndpoint();
+                                options.Protocol = OtlpProtocol.Grpc;
+                            });
 }
 
 file static class ConfigurationExtensions
