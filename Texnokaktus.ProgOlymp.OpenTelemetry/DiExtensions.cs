@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using OpenTelemetry.Exporter;
+using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -13,26 +12,28 @@ namespace Texnokaktus.ProgOlymp.OpenTelemetry;
 
 public static class DiExtensions
 {
+    private const string ServiceNamespace = "Texnokaktus.ProgOlymp";
+    private static readonly string ServiceInstanceId = Guid.NewGuid().ToString();
+    private static AssemblyName? AssemblyName => Assembly.GetEntryAssembly()?.GetName();
+    private static string? ServiceVersion => AssemblyName?.Version?.ToString();
+
     public static IServiceCollection AddTexnokaktusOpenTelemetry(this IServiceCollection services,
-                                                                 IConfiguration configuration,
                                                                  string? serviceName,
                                                                  Action<TracerProviderBuilder>? tracerProviderConfigurationAction,
                                                                  Action<MeterProviderBuilder>? meterProviderConfigurationAction)
     {
-        var assemblyName = Assembly.GetEntryAssembly()?.GetName();
-
         services.AddOpenTelemetry()
-                .ConfigureResource(resourceBuilder => resourceBuilder.AddService(serviceName ?? assemblyName?.Name!,
-                                                                                 serviceNamespace: "Texnokaktus.ProgOlymp",
-                                                                                 serviceVersion: assemblyName?.Version?.ToString()))
+                .ConfigureResource(resourceBuilder => resourceBuilder.AddService(serviceName ?? AssemblyName?.Name!,
+                                                                                 serviceNamespace: ServiceNamespace,
+                                                                                 serviceVersion: ServiceVersion,
+                                                                                 serviceInstanceId: ServiceInstanceId))
                 .WithTracing(tracerProviderBuilder =>
                  {
                      tracerProviderBuilder.AddAspNetCoreInstrumentation()
                                           .AddHttpClientInstrumentation()
                                           .AddRedisInstrumentation()
                                           .AddSqlClientInstrumentation()
-                                          .AddGrpcClientInstrumentation()
-                                          .AddOtlpExporter(options => options.ConfigureOtlpExporter(configuration));
+                                          .AddGrpcClientInstrumentation();
 
                      tracerProviderConfigurationAction?.Invoke(tracerProviderBuilder);
                  })
@@ -40,33 +41,23 @@ public static class DiExtensions
                  {
                      meterProviderBuilder.AddAspNetCoreInstrumentation()
                                          .AddHttpClientInstrumentation()
-                                         .AddSqlClientInstrumentation()
-                                         .AddOtlpExporter(options => options.ConfigureOtlpExporter(configuration));
+                                         .AddSqlClientInstrumentation();
 
                      meterProviderConfigurationAction?.Invoke(meterProviderBuilder);
-                 });
+                 })
+                .UseOtlpExporter();
 
         return services;
     }
 
-    public static LoggerConfiguration AddOpenTelemetrySupport(this LoggerConfiguration loggerConfiguration, IConfiguration configuration) =>
+    public static LoggerConfiguration AddOpenTelemetrySupport(this LoggerConfiguration loggerConfiguration) =>
         loggerConfiguration.Enrich.WithOpenTelemetryTraceId()
                            .Enrich.WithOpenTelemetrySpanId()
-                           .WriteTo.OpenTelemetry(options =>
+                           .WriteTo.OpenTelemetry(options => options.ResourceAttributes = new Dictionary<string, object>
                             {
-                                options.Endpoint = configuration.GetOtlpEndpoint();
-                                options.Protocol = OtlpProtocol.Grpc;
+                                ["service.name"] = "ResultService",
+                                ["service.namespace"] = "Texnokaktus.ProgOlymp",
+                                ["service.version"] = AssemblyName?.Version?.ToString()!,
+                                ["service.instance.id"] = ServiceInstanceId
                             });
-}
-
-file static class ConfigurationExtensions
-{
-    public static void ConfigureOtlpExporter(this OtlpExporterOptions exporterOptions, IConfiguration configuration)
-    {
-        exporterOptions.Endpoint = new(GetOtlpEndpoint(configuration));
-        exporterOptions.Protocol = OtlpExportProtocol.Grpc;
-    }
-
-    public static string GetOtlpEndpoint(this IConfiguration configuration) =>
-        configuration.GetConnectionString("OtlpReceiver") ?? "http://otel-collector:4317";
 }
