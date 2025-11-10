@@ -27,24 +27,16 @@ public static class DiExtensions
                                                                                  serviceNamespace: ServiceNamespace,
                                                                                  serviceVersion: ServiceVersion,
                                                                                  serviceInstanceId: ServiceInstanceId))
-                .WithTracing(tracerProviderBuilder =>
-                 {
-                     tracerProviderBuilder.AddAspNetCoreInstrumentation()
-                                          .AddHttpClientInstrumentation()
-                                          .AddRedisInstrumentation()
-                                          .AddSqlClientInstrumentation()
-                                          .AddGrpcClientInstrumentation();
-
-                     tracerProviderConfigurationAction?.Invoke(tracerProviderBuilder);
-                 })
-                .WithMetrics(meterProviderBuilder =>
-                 {
-                     meterProviderBuilder.AddAspNetCoreInstrumentation()
-                                         .AddHttpClientInstrumentation()
-                                         .AddSqlClientInstrumentation();
-
-                     meterProviderConfigurationAction?.Invoke(meterProviderBuilder);
-                 })
+                .WithTracing(tracerProviderBuilder => tracerProviderBuilder.AddAspNetCoreInstrumentation()
+                                                                           .AddHttpClientInstrumentation()
+                                                                           .AddRedisInstrumentation()
+                                                                           .AddSqlClientInstrumentation()
+                                                                           .AddGrpcClientInstrumentation()
+                                                                           .Apply(tracerProviderConfigurationAction))
+                .WithMetrics(meterProviderBuilder => meterProviderBuilder.AddAspNetCoreInstrumentation()
+                                                                         .AddHttpClientInstrumentation()
+                                                                         .AddSqlClientInstrumentation()
+                                                                         .Apply(meterProviderConfigurationAction))
                 .UseOtlpExporter();
 
         return services;
@@ -60,4 +52,10 @@ public static class DiExtensions
                                 ["service.version"] = AssemblyName?.Version?.ToString()!,
                                 ["service.instance.id"] = ServiceInstanceId
                             });
+
+    private static TBuilder Apply<TBuilder>(this TBuilder builder, Action<TBuilder>? action)
+    {
+        action?.Invoke(builder);
+        return builder;
+    }
 }
