@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Frozen;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
@@ -17,6 +18,14 @@ public static class DiExtensions
     private static AssemblyName? AssemblyName => Assembly.GetEntryAssembly()?.GetName();
     private static string? ServiceVersion => AssemblyName?.Version?.ToString();
 
+    private static readonly FrozenSet<string> IgnoredTracingUrls = new[]
+    {
+        "/health",
+        "/grpc.health.v1.Health/Check",
+        "/metrics",
+        "/healthz"
+    }.ToFrozenSet(); 
+
     public static IServiceCollection AddTexnokaktusOpenTelemetry(this IServiceCollection services,
                                                                  string? serviceName,
                                                                  Action<TracerProviderBuilder>? tracerProviderConfigurationAction,
@@ -27,7 +36,11 @@ public static class DiExtensions
                                                                                  serviceNamespace: ServiceNamespace,
                                                                                  serviceVersion: ServiceVersion,
                                                                                  serviceInstanceId: ServiceInstanceId))
-                .WithTracing(tracerProviderBuilder => tracerProviderBuilder.AddAspNetCoreInstrumentation()
+                .WithTracing(tracerProviderBuilder => tracerProviderBuilder.AddAspNetCoreInstrumentation(options =>
+                                                                            {
+                                                                                options.Filter = context => !context.Request.Path.HasValue
+                                                                                                         || !IgnoredTracingUrls.Contains(context.Request.Path.Value);
+                                                                            })
                                                                            .AddHttpClientInstrumentation()
                                                                            .AddRedisInstrumentation()
                                                                            .AddEntityFrameworkCoreInstrumentation()
