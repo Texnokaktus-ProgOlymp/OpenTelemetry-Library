@@ -6,8 +6,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
-using Serilog.Enrichers.OpenTelemetry;
-using Serilog.Sinks.OpenTelemetry;
+using Serilog.Enrichers.Span;
 
 namespace Texnokaktus.ProgOlymp.OpenTelemetry;
 
@@ -58,8 +57,7 @@ public static class DiExtensions
 
     public static LoggerConfiguration AddOpenTelemetrySupport(this LoggerConfiguration loggerConfiguration,
                                                               string? serviceName) =>
-        loggerConfiguration.Enrich.WithOpenTelemetryTraceId()
-                           .Enrich.WithOpenTelemetrySpanId()
+        loggerConfiguration.Enrich.WithSpan()
                            .WriteTo.OpenTelemetry(options => options.ResourceAttributes
                                                                     .AddNotNullValue("service.name", serviceName ?? AssemblyName?.Name)
                                                                     .AddNotNullValue("service.namespace", ServiceNamespace)
